@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Los campos a los que puede acceder JSON son los que tienen mayúscula nomás
 type project struct {
 	Name string `json:"name"`
 	Directory string `json:"directory"`
@@ -35,16 +36,15 @@ func CreateProject() {
 	fmt.Print("Project name: ")
 	fmt.Scan(&name)
 	fmt.Print("Project directory: ")
-	fmt.Scan(&directory)
+	fmt.Scan(&directory) // TODO: Agregar verificación de que exista el directorio
 	fmt.Print("Project type (web, dekstop, game, etc): ")
 	fmt.Scan(&projectType)
 
+	// Using Unix time 0 as a way of implementing a null time. Fix later
+	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0)}
 
 	if !projectsFileExists() {
-		// Using Unix time 0 as a way of implementing a null time. Fix later
 		var projects []project
-		newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0)}
-
 		projects = append(projects, newProject)
 
 		jsonBytes, err := json.Marshal(projects)
@@ -76,13 +76,24 @@ func CreateProject() {
 		return
 	}
 	
-	var savedProjects project
+	var savedProjects []project
 	err2 := json.Unmarshal(jsonData, &savedProjects)
 	if err2 != nil {
 		fmt.Println("Error: ", err2)
 	}
 
-	fmt.Println("Saved projects: ", savedProjects)
+	savedProjects = append(savedProjects, newProject)
+	
+	jsonResult, err3 := json.Marshal(savedProjects)
+	if err3 != nil {
+		fmt.Println("Error: ", err3)
+		return
+	}
+	err4 := os.WriteFile(projectsFilePath, jsonResult, 0644)
+	if err4 != nil {
+		fmt.Println("Error: ", err4)
+		return
+	}
 }
 
 func readProject() {}
@@ -122,8 +133,4 @@ func main() {
 		updateProject()
 	case 4: deleteProject()
 	}
-
-	// Eliminar después de testear
-	os.Remove("projects.json")
-	fmt.Println("Borrando json")
 }
