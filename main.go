@@ -1,7 +1,9 @@
 package main
+
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -96,7 +98,51 @@ func CreateProject() {
 	}
 }
 
-func readProject() {}
+func readProject() {
+	jsonBytes, err := os.ReadFile(projectsFilePath)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return
+	}
+
+	var savedProjects []project
+	err2 := json.Unmarshal(jsonBytes, &savedProjects)
+	if err2 != nil {
+		fmt.Println("Error: ", err2)
+	}
+
+	fmt.Println("\nSelect a project: ")
+	for i := 0; i < len(savedProjects); i++ {
+		if i == 0 {
+			fmt.Printf("	%d) %s", i + 1, savedProjects[i].Name)
+			continue
+		}
+		fmt.Printf("\n	%d) %s", i + 1, savedProjects[i].Name)
+	}
+
+	var selectedProjectId int
+
+	fmt.Print("\nSelect the index of a project: ")
+	_,  err3 := fmt.Scan(&selectedProjectId)
+	if err3 != nil {
+		log.Fatal(err3)
+	}
+
+	invalidInputRange := selectedProjectId < 0 || selectedProjectId > len(savedProjects)
+	if invalidInputRange {
+		fmt.Println("Inserted value is not allowed")
+		return
+	}
+
+	// -1 porque los índices seleccionables empiezan de uno y la posición del array empieza desde el 0
+	selectedProject := savedProjects[selectedProjectId - 1]
+	fmt.Println("PROJECT: ")
+	fmt.Println("Name: ", selectedProject.Name)
+	fmt.Println("Directory: ", selectedProject.Directory)
+	fmt.Println("Project type: ", selectedProject.ProjectType)
+	fmt.Println("Creation date: ", selectedProject.CreationDate)
+	fmt.Println("Last accessed: ", selectedProject.LastAccessed)
+}
 
 func updateProject() {}
 
