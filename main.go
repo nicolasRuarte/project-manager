@@ -181,14 +181,14 @@ func main() {
 	fmt.Println("	2) Go to a project")
 	fmt.Println("	3) Update a project (WIP)")
 	fmt.Println("	4) Delete a project (WIP)")
-	//fmt.Println("	5) Work in project")
+	fmt.Println("	5) Work in project (WIP)")
 	fmt.Print("Your option: ")
 
 	var input int 
 	fmt.Scanln(&input)
 
 	if input > 4 || input < 1 {
-		fmt.Println("Error: The inserted value is not one of the permitted options")
+		fmt.Println("Error: The inserted value is not one of the allowed options")
 		return
 	}
 
