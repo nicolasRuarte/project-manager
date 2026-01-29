@@ -15,6 +15,7 @@ type project struct {
 	ProjectType string `json:"projectType"` // If it is a web, mobile, dekstop or videogame project (Not limited to those options)
 	CreationDate time.Time `json:"creationDate"`
 	LastAccessed time.Time `json:"lastAccessed"`
+	HasInitScript bool `json:"hasInitScript"`
 }
 
 const projectsFilePath = "projects.json"
@@ -28,12 +29,28 @@ func projectsFileExists() bool {
 	return true
 }
 
+func processYesOrNoInput(input string) bool {
+	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
+		fmt.Println("Please select 'y' or 'n' as options")
+		return false
+	}
+
+	inputIsYes := input == "y" || input == "Y"
+	if inputIsYes {
+		return true
+	} else {
+		return false
+	}
+}
+
 func CreateProject() {
 	fmt.Println("\nCreating project...")
 
 	var name string
 	var directory string
 	var projectType string
+	var hasInitScript bool
+	var yesOrNo string // Variable para aceptar el y/n del usuario y transformarlo en booleano
 
 	fmt.Print("Project name: ")
 	fmt.Scan(&name)
@@ -41,9 +58,12 @@ func CreateProject() {
 	fmt.Scan(&directory) // TODO: Agregar verificación de que exista el directorio
 	fmt.Print("Project type (web, dekstop, game, etc): ")
 	fmt.Scan(&projectType)
+	fmt.Print("Has initialization script (y/n): ")
+	fmt.Scan(&yesOrNo)
+	hasInitScript = processYesOrNoInput(yesOrNo)
 
 	// Using Unix time 0 as a way of implementing a null time. Fix later
-	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0)}
+	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0), hasInitScript}
 
 	if !projectsFileExists() {
 		var projects []project
@@ -111,6 +131,7 @@ func readProject() {
 		fmt.Println("Error: ", err2)
 	}
 
+	// Imprime los proyectos guardados en pantalla
 	fmt.Println("\nSelect a project: ")
 	for i := 0; i < len(savedProjects); i++ {
 		if i == 0 {
@@ -142,6 +163,7 @@ func readProject() {
 	fmt.Println("Project type: ", selectedProject.ProjectType)
 	fmt.Println("Creation date: ", selectedProject.CreationDate)
 	fmt.Println("Last accessed: ", selectedProject.LastAccessed)
+	fmt.Println("Has init script: ", selectedProject.HasInitScript)
 }
 
 func updateProject() {}
