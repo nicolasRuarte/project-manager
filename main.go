@@ -156,7 +156,7 @@ func main() {
 	
 	fmt.Println("Please choose one of the options below: ")
 	fmt.Println("	1) Create a project")
-	fmt.Println("	2) Go to a project (WIP)")
+	fmt.Println("	2) Go to a project")
 	fmt.Println("	3) Update a project (WIP)")
 	fmt.Println("	4) Delete a project (WIP)")
 	//fmt.Println("	5) Work in project")
