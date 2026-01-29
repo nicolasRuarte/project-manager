@@ -52,8 +52,12 @@ func CreateProject() {
 	var hasInitScript bool
 	var yesOrNo string // Variable para aceptar el y/n del usuario y transformarlo en booleano
 
+	// Fix: El scan no acepta inputs que contengan espacios, hay que ver qué hacemos con eso
 	fmt.Print("Project name: ")
-	fmt.Scan(&name)
+	wordCount, err := fmt.Scan(&name)
+	if wordCount > 1 {
+		fmt.Println("Projects names should not have spaces")
+	}
 	fmt.Print("Project directory: ")
 	fmt.Scan(&directory) // TODO: Agregar verificación de que exista el directorio
 	fmt.Print("Project type (web, dekstop, game, etc): ")
@@ -166,7 +170,129 @@ func readProject() {
 	fmt.Println("Has init script: ", selectedProject.HasInitScript)
 }
 
-func updateProject() {}
+func updateProject() {
+	jsonData, err := os.ReadFile(projectsFilePath)
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return
+	}
+
+	var savedProjects []project
+	err2 := json.Unmarshal(jsonData, &savedProjects)
+	if err2 != nil {
+		log.Fatal("Error: ", err2)
+		return
+	}
+
+	fmt.Println("\nSelect a project: ")
+	for i := 0; i < len(savedProjects); i++ {
+		if i == 0 {
+			fmt.Printf("\t%d) %s", i + 1, savedProjects[i].Name)
+			continue
+		}
+		fmt.Printf("\n\t%d) %s", i + 1, savedProjects[i].Name)
+	}
+
+	fmt.Print("\nInsert the index of the project: ")
+	var selectedProjectIndex int
+	fmt.Scan(&selectedProjectIndex)
+
+	invalidInputRange := selectedProjectIndex < 1 || selectedProjectIndex > len(savedProjects)
+	if invalidInputRange {
+		fmt.Println("Inserted value is not allowed")
+		return
+	}
+
+	// Refactorizar, creo que puedo hacerlo más programático
+	fmt.Println("\nSelect the attribute you want to update")
+	fmt.Println("\t1) Name")
+	fmt.Println("\t2) Directory")
+	fmt.Println("\t3) Project type")
+	fmt.Println("\t4) Has init script")
+
+	var selectedAttributeIndex int
+	fmt.Print("\nIndex of the attribute you want to update: ")
+	fmt.Scan(&selectedAttributeIndex)
+
+	invalidInputRange = selectedAttributeIndex < 1 || selectedAttributeIndex > 4
+	if invalidInputRange {
+		fmt.Println("Inserted value is not allowed")
+		return
+	}
+
+	switch selectedAttributeIndex {
+	case 1:
+		var newValue string
+		fmt.Print("Insert new value: ")
+		fmt.Scan(&newValue)
+
+		savedProjects[selectedProjectIndex - 1].Name = newValue
+
+		jsonBytes, err := json.Marshal(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+			return
+		}
+
+		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+	case 2:
+		var newValue string
+
+		fmt.Print("Insert new value: ")
+		fmt.Scan(&newValue)
+
+		savedProjects[selectedProjectIndex - 1].Directory = newValue
+
+		jsonBytes, err := json.Marshal(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+			return
+		}
+
+		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+	case 3:
+		var newValue string
+
+		fmt.Print("Insert new value: ")
+		fmt.Scan(&newValue)
+
+		savedProjects[selectedProjectIndex - 1].ProjectType = newValue
+
+		jsonBytes, err := json.Marshal(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+			return
+		}
+
+		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+	case 4: 
+		savedProjects[selectedProjectIndex - 1].HasInitScript = !savedProjects[selectedProjectIndex - 1].HasInitScript 
+
+		jsonBytes, err := json.Marshal(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+			return
+		}
+
+		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+
+		fmt.Println("Has init script value was swapped")
+	}
+
+	fmt.Println("Project updated successfully!")
+}
 
 func deleteProject() {}
 
@@ -179,7 +305,7 @@ func main() {
 	fmt.Println("Please choose one of the options below: ")
 	fmt.Println("	1) Create a project")
 	fmt.Println("	2) Go to a project")
-	fmt.Println("	3) Update a project (WIP)")
+	fmt.Println("	3) Update a project")
 	fmt.Println("	4) Delete a project (WIP)")
 	fmt.Println("	5) Work in project (WIP)")
 	fmt.Print("Your option: ")
