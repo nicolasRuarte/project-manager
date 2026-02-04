@@ -45,6 +45,21 @@ func processYesOrNoInput(input string) bool {
 	}
 }
 
+func getProjectListFromJson() ([]project, error) {
+	jsonBytes, err := os.ReadFile(projectsFilePath)
+	if err != nil {
+		return nil, err
+	}
+	
+	var projectList []project
+	err = json.Unmarshal(jsonBytes, &projectList)
+	if err != nil {
+		return nil, err
+	}
+
+	return projectList, nil
+}
+
 func CreateProject() {
 	fmt.Println("\nCreating project...")
 
@@ -125,16 +140,9 @@ func CreateProject() {
 }
 
 func readProject() {
-	jsonBytes, err := os.ReadFile(projectsFilePath)
+	savedProjects, err := getProjectListFromJson()
 	if err != nil {
-		fmt.Println("Error: ", err)
-		return
-	}
-
-	var savedProjects []project
-	err2 := json.Unmarshal(jsonBytes, &savedProjects)
-	if err2 != nil {
-		fmt.Println("Error: ", err2)
+		log.Fatal("Error: ", err)
 	}
 
 	// Imprime los proyectos guardados en pantalla
@@ -150,9 +158,9 @@ func readProject() {
 	var selectedProjectId int
 
 	fmt.Print("\nSelect the index of a project: ")
-	_,  err3 := fmt.Scan(&selectedProjectId)
-	if err3 != nil {
-		log.Fatal(err3)
+	_,  err = fmt.Scan(&selectedProjectId)
+	if err != nil {
+		log.Fatal("Error: ", err)
 	}
 
 	invalidInputRange := selectedProjectId < 0 || selectedProjectId > len(savedProjects)
@@ -173,17 +181,9 @@ func readProject() {
 }
 
 func updateProject() {
-	jsonData, err := os.ReadFile(projectsFilePath)
+	savedProjects, err := getProjectListFromJson()
 	if err != nil {
 		log.Fatal("Error: ", err)
-		return
-	}
-
-	var savedProjects []project
-	err2 := json.Unmarshal(jsonData, &savedProjects)
-	if err2 != nil {
-		log.Fatal("Error: ", err2)
-		return
 	}
 
 	fmt.Println("\nSelect a project: ")
@@ -301,18 +301,9 @@ func deleteProject() {
 }
 
 func workInProject() {
-	// Listar proyectos guardados
-	jsonData, err := os.ReadFile(projectsFilePath)
+	savedProjects, err := getProjectListFromJson()
 	if err != nil {
 		log.Fatal("Error: ", err)
-		return
-	}
-
-	var savedProjects []project
-	err2 := json.Unmarshal(jsonData, &savedProjects)
-	if err2 != nil {
-		log.Fatal("Error: ", err2)
-		return
 	}
 
 	fmt.Println("\nSelect a project: ")
