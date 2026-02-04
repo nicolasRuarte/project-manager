@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"time"
+	"mvdan.cc/sh/shell"
 )
 
 // Los campos a los que puede acceder JSON son los que tienen mayúscula nomás
@@ -294,9 +296,66 @@ func updateProject() {
 	fmt.Println("Project updated successfully!")
 }
 
-func deleteProject() {}
+func deleteProject() {
+	fmt.Println("You can't delete a project yet. Functionality wasn't coded")
+}
 
-func workInProject() {}
+func workInProject() {
+	// Listar proyectos guardados
+	jsonData, err := os.ReadFile(projectsFilePath)
+	if err != nil {
+		log.Fatal("Error: ", err)
+		return
+	}
+
+	var savedProjects []project
+	err2 := json.Unmarshal(jsonData, &savedProjects)
+	if err2 != nil {
+		log.Fatal("Error: ", err2)
+		return
+	}
+
+	fmt.Println("\nSelect a project: ")
+	for i := 0; i < len(savedProjects); i++ {
+		if i == 0 {
+			fmt.Printf("\t%d) %s", i + 1, savedProjects[i].Name)
+			continue
+		}
+		fmt.Printf("\n\t%d) %s", i + 1, savedProjects[i].Name)
+	}
+
+	fmt.Print("\nInsert the index of the project: ")
+	var selectedProjectIndex int
+	fmt.Scan(&selectedProjectIndex)
+
+	invalidInputRange := selectedProjectIndex < 1 || selectedProjectIndex > len(savedProjects)
+	if invalidInputRange {
+		fmt.Println("Inserted value is not allowed")
+		return
+	}
+
+	// Hacer una verifcación de que existe el archivo init en el directorio del proyecto
+	projectToWorkOn := savedProjects[selectedProjectIndex - 1]
+
+	fileInfo, err := os.Stat(projectToWorkOn.Directory + "init")
+	if err != nil {
+		log.Fatal("Error: ", err)
+		fmt.Println("Check if you have an init file in your project's directory")
+	}
+
+	initFileIsExecutable := fileInfo.Mode()&0100 != 0
+
+	if !initFileIsExecutable {
+		fmt.Println("The init file in the project's directory is not executable")
+	}
+
+	fmt.Println("Executing script...")
+	_, err = shell.SourceFile(context.TODO(), projectToWorkOn.Directory + "init")
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+	fmt.Println("Script executed. Good luck!")
+}
 
 func main() {
 
@@ -313,7 +372,7 @@ func main() {
 	var input int 
 	fmt.Scanln(&input)
 
-	if input > 4 || input < 1 {
+	if input > 5 || input < 1 {
 		fmt.Println("Error: The inserted value is not one of the allowed options")
 		return
 	}
@@ -325,6 +384,9 @@ func main() {
 		readProject()
 	case 3:
 		updateProject()
-	case 4: deleteProject()
+	case 4: 
+		deleteProject()
+	case 5:
+		workInProject()
 	}
 }
