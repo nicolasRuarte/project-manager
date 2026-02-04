@@ -366,7 +366,7 @@ func main() {
 	fmt.Println("	2) Go to a project")
 	fmt.Println("	3) Update a project")
 	fmt.Println("	4) Delete a project (WIP)")
-	fmt.Println("	5) Work in project (WIP)")
+	fmt.Println("	5) Work in project")
 	fmt.Print("Your option: ")
 
 	var input int 
