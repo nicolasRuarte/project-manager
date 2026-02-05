@@ -24,7 +24,7 @@ type project struct {
 
 const projectsFilePath = "projects.json"
 
-func projectsFileExists() bool {
+func CheckIfProjectsFileExists() bool {
 	_, err := os.ReadFile(projectsFilePath)
 	if err != nil {
 		return false
@@ -34,7 +34,7 @@ func projectsFileExists() bool {
 }
 
 // Acá hay error porque me devuelve falso en casos que me debería devolver error. Corregir
-func processYesOrNoInput(input string) bool {
+func ProcessYesOrNoInput(input string) bool {
 	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
 		fmt.Println("Please select 'y' or 'n' as options")
 		return false
@@ -48,7 +48,7 @@ func processYesOrNoInput(input string) bool {
 	}
 }
 
-func getProjectListFromJson() ([]project, error) {
+func GetProjectListFromJson() ([]project, error) {
 	jsonBytes, err := os.ReadFile(projectsFilePath)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func getProjectListFromJson() ([]project, error) {
 }
 
 // Devuelve el índice del proyecto elegido
-func showSelectProjectMenu(savedProjects []project) (int, error) {
+func ShowSelectProjectMenu(savedProjects []project) (int, error) {
 	const errorIntValue = -1
 	fmt.Println("\nSelect a project: ")
 	for i, project := range savedProjects {
@@ -114,12 +114,12 @@ func CreateProject() {
 	fmt.Scan(&projectType)
 	fmt.Print("Has initialization script (y/n): ")
 	fmt.Scan(&yesOrNo)
-	hasInitScript = processYesOrNoInput(yesOrNo)
+	hasInitScript = ProcessYesOrNoInput(yesOrNo)
 
 	// Using Unix time 0 as a way of implementing a null time. Fix later
 	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0), hasInitScript}
 
-	if !projectsFileExists() {
+	if !CheckIfProjectsFileExists() {
 		var projects []project
 		projects = append(projects, newProject)
 
@@ -172,13 +172,13 @@ func CreateProject() {
 	}
 }
 
-func readProject() {
-	savedProjects, err := getProjectListFromJson()
+func ReadProject() {
+	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	projectIndex, err := showSelectProjectMenu(savedProjects)
+	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 
 	// -1 porque los índices seleccionables empiezan de uno y la posición del array empieza desde el 0
 	selectedProject := savedProjects[projectIndex]
@@ -191,13 +191,13 @@ func readProject() {
 	fmt.Println("Has init script: ", selectedProject.HasInitScript)
 }
 
-func updateProject() {
-	savedProjects, err := getProjectListFromJson()
+func UpdateProject() {
+	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	projectIndex, err := showSelectProjectMenu(savedProjects)
+	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -293,17 +293,17 @@ func updateProject() {
 	fmt.Println("Project updated successfully!")
 }
 
-func deleteProject() {
+func DeleteProject() {
 	fmt.Println("You can't delete a project yet. Functionality wasn't coded")
 }
 
-func workInProject() {
-	savedProjects, err := getProjectListFromJson()
+func WorkInProject() {
+	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
 
-	projectIndex, err := showSelectProjectMenu(savedProjects)
+	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
@@ -355,12 +355,12 @@ func main() {
 	case 1:
 		CreateProject()
 	case 2:
-		readProject()
+		ReadProject()
 	case 3:
-		updateProject()
+		UpdateProject()
 	case 4: 
-		deleteProject()
+		DeleteProject()
 	case 5:
-		workInProject()
+		WorkInProject()
 	}
 }
