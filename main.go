@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
+
 	"mvdan.cc/sh/shell"
 )
 
@@ -31,6 +33,7 @@ func projectsFileExists() bool {
 	return true
 }
 
+// Acá hay error porque me devuelve falso en casos que me debería devolver error. Corregir
 func processYesOrNoInput(input string) bool {
 	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
 		fmt.Println("Please select 'y' or 'n' as options")
@@ -58,6 +61,36 @@ func getProjectListFromJson() ([]project, error) {
 	}
 
 	return projectList, nil
+}
+
+// Devuelve el índice del proyecto elegido
+func showSelectProjectMenu(savedProjects []project) (int, error) {
+	const errorIntValue = -1
+	fmt.Println("\nSelect a project: ")
+	for i, project := range savedProjects {
+		if i == 0 {
+			fmt.Printf("	%d) %s", i + 1, project.Name)
+			continue
+		}
+		fmt.Printf("\n	%d) %s", i + 1, project.Name)
+	}
+
+	var selectedProjectId int
+	fmt.Print("\nSelect the index of a project: ")
+	count,  err := fmt.Scan(&selectedProjectId)
+	if err != nil {
+		return errorIntValue, err
+	}
+
+	invalidInputRange := selectedProjectId < 1 || selectedProjectId > len(savedProjects) || count != 1
+	if invalidInputRange {
+		return errorIntValue, errors.New("El índice que ingresó es inválido")
+	}
+
+	// Esto porque en la interfaz la lista empieza en 1, mientras que los arrays en Go empiezan en 0
+	projectIndexOnArray := selectedProjectId - 1
+	
+	return projectIndexOnArray, nil
 }
 
 func CreateProject() {
@@ -145,32 +178,10 @@ func readProject() {
 		log.Fatal("Error: ", err)
 	}
 
-	// Imprime los proyectos guardados en pantalla
-	fmt.Println("\nSelect a project: ")
-	for i := 0; i < len(savedProjects); i++ {
-		if i == 0 {
-			fmt.Printf("	%d) %s", i + 1, savedProjects[i].Name)
-			continue
-		}
-		fmt.Printf("\n	%d) %s", i + 1, savedProjects[i].Name)
-	}
-
-	var selectedProjectId int
-
-	fmt.Print("\nSelect the index of a project: ")
-	_,  err = fmt.Scan(&selectedProjectId)
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	invalidInputRange := selectedProjectId < 0 || selectedProjectId > len(savedProjects)
-	if invalidInputRange {
-		fmt.Println("Inserted value is not allowed")
-		return
-	}
+	projectIndex, err := showSelectProjectMenu(savedProjects)
 
 	// -1 porque los índices seleccionables empiezan de uno y la posición del array empieza desde el 0
-	selectedProject := savedProjects[selectedProjectId - 1]
+	selectedProject := savedProjects[projectIndex]
 	fmt.Println("PROJECT: ")
 	fmt.Println("Name: ", selectedProject.Name)
 	fmt.Println("Directory: ", selectedProject.Directory)
@@ -186,23 +197,9 @@ func updateProject() {
 		log.Fatal("Error: ", err)
 	}
 
-	fmt.Println("\nSelect a project: ")
-	for i := 0; i < len(savedProjects); i++ {
-		if i == 0 {
-			fmt.Printf("\t%d) %s", i + 1, savedProjects[i].Name)
-			continue
-		}
-		fmt.Printf("\n\t%d) %s", i + 1, savedProjects[i].Name)
-	}
-
-	fmt.Print("\nInsert the index of the project: ")
-	var selectedProjectIndex int
-	fmt.Scan(&selectedProjectIndex)
-
-	invalidInputRange := selectedProjectIndex < 1 || selectedProjectIndex > len(savedProjects)
-	if invalidInputRange {
-		fmt.Println("Inserted value is not allowed")
-		return
+	projectIndex, err := showSelectProjectMenu(savedProjects)
+	if err != nil {
+		log.Fatal("Error: ", err)
 	}
 
 	// Refactorizar, creo que puedo hacerlo más programático
@@ -216,7 +213,7 @@ func updateProject() {
 	fmt.Print("\nIndex of the attribute you want to update: ")
 	fmt.Scan(&selectedAttributeIndex)
 
-	invalidInputRange = selectedAttributeIndex < 1 || selectedAttributeIndex > 4
+	invalidInputRange := selectedAttributeIndex < 1 || selectedAttributeIndex > 4
 	if invalidInputRange {
 		fmt.Println("Inserted value is not allowed")
 		return
@@ -228,7 +225,7 @@ func updateProject() {
 		fmt.Print("Insert new value: ")
 		fmt.Scan(&newValue)
 
-		savedProjects[selectedProjectIndex - 1].Name = newValue
+		savedProjects[projectIndex].Name = newValue
 
 		jsonBytes, err := json.Marshal(savedProjects)
 		if err != nil {
@@ -246,7 +243,7 @@ func updateProject() {
 		fmt.Print("Insert new value: ")
 		fmt.Scan(&newValue)
 
-		savedProjects[selectedProjectIndex - 1].Directory = newValue
+		savedProjects[projectIndex].Directory = newValue
 
 		jsonBytes, err := json.Marshal(savedProjects)
 		if err != nil {
@@ -264,7 +261,7 @@ func updateProject() {
 		fmt.Print("Insert new value: ")
 		fmt.Scan(&newValue)
 
-		savedProjects[selectedProjectIndex - 1].ProjectType = newValue
+		savedProjects[projectIndex].ProjectType = newValue
 
 		jsonBytes, err := json.Marshal(savedProjects)
 		if err != nil {
@@ -277,7 +274,7 @@ func updateProject() {
 			log.Fatal("Error: ", err)
 		}
 	case 4: 
-		savedProjects[selectedProjectIndex - 1].HasInitScript = !savedProjects[selectedProjectIndex - 1].HasInitScript 
+		savedProjects[projectIndex].HasInitScript = !savedProjects[projectIndex].HasInitScript 
 
 		jsonBytes, err := json.Marshal(savedProjects)
 		if err != nil {
@@ -306,27 +303,13 @@ func workInProject() {
 		log.Fatal("Error: ", err)
 	}
 
-	fmt.Println("\nSelect a project: ")
-	for i := 0; i < len(savedProjects); i++ {
-		if i == 0 {
-			fmt.Printf("\t%d) %s", i + 1, savedProjects[i].Name)
-			continue
-		}
-		fmt.Printf("\n\t%d) %s", i + 1, savedProjects[i].Name)
-	}
-
-	fmt.Print("\nInsert the index of the project: ")
-	var selectedProjectIndex int
-	fmt.Scan(&selectedProjectIndex)
-
-	invalidInputRange := selectedProjectIndex < 1 || selectedProjectIndex > len(savedProjects)
-	if invalidInputRange {
-		fmt.Println("Inserted value is not allowed")
-		return
+	projectIndex, err := showSelectProjectMenu(savedProjects)
+	if err != nil {
+		log.Fatal("Error: ", err)
 	}
 
 	// Hacer una verifcación de que existe el archivo init en el directorio del proyecto
-	projectToWorkOn := savedProjects[selectedProjectIndex - 1]
+	projectToWorkOn := savedProjects[projectIndex]
 
 	fileInfo, err := os.Stat(projectToWorkOn.Directory + "init")
 	if err != nil {
@@ -337,7 +320,7 @@ func workInProject() {
 	initFileIsExecutable := fileInfo.Mode()&0100 != 0
 
 	if !initFileIsExecutable {
-		fmt.Println("The init file in the project's directory is not executable")
+		log.Fatal("The init file in the project's directory is not executable")
 	}
 
 	fmt.Println("Executing script...")
@@ -356,7 +339,7 @@ func main() {
 	fmt.Println("	1) Create a project")
 	fmt.Println("	2) Go to a project")
 	fmt.Println("	3) Update a project")
-	fmt.Println("	4) Delete a project (WIP)")
+	fmt.Println("	4) Delete a project")
 	fmt.Println("	5) Work in project")
 	fmt.Print("Your option: ")
 
