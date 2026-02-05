@@ -129,17 +129,17 @@ func CreateProject() {
 			return
 		}
 
-		err2 := os.WriteFile(projectsFilePath, jsonBytes, 0644)
-		if err2 != nil {
-			fmt.Println("Error: ", err2)
+		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		if err != nil {
+			fmt.Println("Error: ", err)
 			return
 		}
 
 		//fmt.Println("Project created successfully!")
 		
-		_, err3 := os.ReadFile(projectsFilePath)
-		if err3 != nil {
-			fmt.Println("Error: ", err3)
+		_, err = os.ReadFile(projectsFilePath)
+		if err != nil {
+			fmt.Println("Error: ", err)
 			return
 		}
 
@@ -153,21 +153,21 @@ func CreateProject() {
 	}
 	
 	var savedProjects []project
-	err2 := json.Unmarshal(jsonData, &savedProjects)
-	if err2 != nil {
-		fmt.Println("Error: ", err2)
+	err = json.Unmarshal(jsonData, &savedProjects)
+	if err != nil {
+		fmt.Println("Error: ", err)
 	}
 
 	savedProjects = append(savedProjects, newProject)
 	
-	jsonResult, err3 := json.Marshal(savedProjects)
-	if err3 != nil {
-		fmt.Println("Error: ", err3)
+	jsonResult, err := json.Marshal(savedProjects)
+	if err != nil {
+		fmt.Println("Error: ", err)
 		return
 	}
-	err4 := os.WriteFile(projectsFilePath, jsonResult, 0644)
-	if err4 != nil {
-		fmt.Println("Error: ", err4)
+	err = os.WriteFile(projectsFilePath, jsonResult, 0644)
+	if err != nil {
+		fmt.Println("Error: ", err)
 		return
 	}
 }
@@ -347,7 +347,7 @@ func main() {
 	fmt.Scanln(&input)
 
 	if input > 5 || input < 1 {
-		fmt.Println("Error: The inserted value is not one of the allowed options")
+		log.Fatal("Error: The inserted value is not one of the allowed options")
 		return
 	}
 
