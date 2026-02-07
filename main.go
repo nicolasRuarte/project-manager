@@ -33,6 +33,37 @@ func CheckIfProjectsFileExists() bool {
 	return true
 }
 
+func GetProjectListFromJson() ([]project, error) {
+	jsonBytes, err := os.ReadFile(projectsFilePath)
+	if err != nil {
+		return nil, err
+	}
+	
+	var projectList []project
+	err = json.Unmarshal(jsonBytes, &projectList)
+	if err != nil {
+		return nil, err
+	}
+
+	return projectList, nil
+}
+
+func WriteToJsonFile(projects []project) error {
+		jsonBytes, err := json.Marshal(projects)
+		if err != nil {
+			return err
+		}
+
+		// No sé bien qué hace esta variable, pero me deja usar la función
+		const permissions = 0644
+		err = os.WriteFile(projectsFilePath, jsonBytes, permissions)
+		if err != nil {
+			return err
+		}
+
+		return nil
+}
+
 // Acá hay error porque me devuelve falso en casos que me debería devolver error. Corregir
 func ProcessYesOrNoInput(input string) bool {
 	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
@@ -48,20 +79,6 @@ func ProcessYesOrNoInput(input string) bool {
 	}
 }
 
-func GetProjectListFromJson() ([]project, error) {
-	jsonBytes, err := os.ReadFile(projectsFilePath)
-	if err != nil {
-		return nil, err
-	}
-	
-	var projectList []project
-	err = json.Unmarshal(jsonBytes, &projectList)
-	if err != nil {
-		return nil, err
-	}
-
-	return projectList, nil
-}
 
 // Devuelve el índice del proyecto elegido
 func ShowSelectProjectMenu(savedProjects []project) (int, error) {
@@ -123,25 +140,9 @@ func CreateProject() {
 		var projects []project
 		projects = append(projects, newProject)
 
-		jsonBytes, err := json.Marshal(projects)
-		if err != nil {
-			fmt.Println("Error: ", err)
-			return
-		}
+		WriteToJsonFile(projects)
 
-		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
-		if err != nil {
-			fmt.Println("Error: ", err)
-			return
-		}
-
-		//fmt.Println("Project created successfully!")
-		
-		_, err = os.ReadFile(projectsFilePath)
-		if err != nil {
-			fmt.Println("Error: ", err)
-			return
-		}
+		fmt.Println("Project created successfully!")
 
 		return
 	}
@@ -160,16 +161,7 @@ func CreateProject() {
 
 	savedProjects = append(savedProjects, newProject)
 	
-	jsonResult, err := json.Marshal(savedProjects)
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return
-	}
-	err = os.WriteFile(projectsFilePath, jsonResult, 0644)
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return
-	}
+	WriteToJsonFile(savedProjects)
 }
 
 func ReadProject() {
@@ -227,16 +219,9 @@ func UpdateProject() {
 
 		savedProjects[projectIndex].Name = newValue
 
-		jsonBytes, err := json.Marshal(savedProjects)
-		if err != nil {
-			log.Fatal("Error: ", err)
-			return
-		}
+		WriteToJsonFile(savedProjects)
 
-		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
-		if err != nil {
-			log.Fatal("Error: ", err)
-		}
+		fmt.Println("Project updated successfully!")
 	case 2:
 		var newValue string
 
@@ -245,16 +230,9 @@ func UpdateProject() {
 
 		savedProjects[projectIndex].Directory = newValue
 
-		jsonBytes, err := json.Marshal(savedProjects)
-		if err != nil {
-			log.Fatal("Error: ", err)
-			return
-		}
+		WriteToJsonFile(savedProjects)
 
-		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
-		if err != nil {
-			log.Fatal("Error: ", err)
-		}
+		fmt.Println("Project updated successfully!")
 	case 3:
 		var newValue string
 
