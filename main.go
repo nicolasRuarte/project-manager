@@ -356,7 +356,6 @@ func main() {
 		log.Fatal("Error: ", err)
 	}
 	projectsFilePath = homeDir + projectsFilePath
-	fmt.Println("PROJECT PATH: ", projectsFilePath)
 
 	fmt.Println("Welcome to the project manager")
 	
