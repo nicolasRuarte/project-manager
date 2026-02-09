@@ -20,13 +20,16 @@ NOTE: This project probably only works on Linux
 1. Before anything, you will need to have an executable file called init. That file is the one that is going to be executed by the program and it should have the instructions to open all the apps that you need to work on the project. Creating one is easy: here's an example:
 
 ```
-cd ~/project-manager
-
-firefox
+firefox "chatgpt.com"
 sleep 5
 
-code .
+code ~/mis-apps/project-manager/
 sleep 5
+
+yt-music 
+sleep 5
+
+gnome-terminal -- bash -c 'cd  ~/mis-apps/project-manager/; nvim .;  bash'
 ```
 
 This one opens Firefox and Visual Studio Code, but you can write something similar that follows your needs
