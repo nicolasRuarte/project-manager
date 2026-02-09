@@ -22,11 +22,17 @@ type project struct {
 	HasInitScript bool `json:"hasInitScript"`
 }
 
-const projectsFilePath = "projects.json"
+var projectsFilePath string = "/.project-manager/projects.json"
 
 func CheckIfProjectsFileExists() bool {
 	_, err := os.ReadFile(projectsFilePath)
 	if err != nil {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+		os.Mkdir(homeDir + "/.project-manager/", 0700)
+
 		return false
 	}
 
@@ -140,7 +146,10 @@ func CreateProject() {
 		var projects []project
 		projects = append(projects, newProject)
 
-		WriteToJsonFile(projects)
+		err = WriteToJsonFile(projects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 
 		fmt.Println("Project created successfully!")
 
@@ -161,7 +170,10 @@ func CreateProject() {
 
 	savedProjects = append(savedProjects, newProject)
 	
-	WriteToJsonFile(savedProjects)
+	err = WriteToJsonFile(savedProjects)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
 }
 
 func ReadProject() {
@@ -219,7 +231,10 @@ func UpdateProject() {
 
 		savedProjects[projectIndex].Name = newValue
 
-		WriteToJsonFile(savedProjects)
+		err = WriteToJsonFile(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 
 		fmt.Println("Project updated successfully!")
 	case 2:
@@ -230,7 +245,10 @@ func UpdateProject() {
 
 		savedProjects[projectIndex].Directory = newValue
 
-		WriteToJsonFile(savedProjects)
+		err = WriteToJsonFile(savedProjects)
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 
 		fmt.Println("Project updated successfully!")
 	case 3:
@@ -241,26 +259,14 @@ func UpdateProject() {
 
 		savedProjects[projectIndex].ProjectType = newValue
 
-		jsonBytes, err := json.Marshal(savedProjects)
-		if err != nil {
-			log.Fatal("Error: ", err)
-			return
-		}
-
-		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		err = WriteToJsonFile(savedProjects)
 		if err != nil {
 			log.Fatal("Error: ", err)
 		}
 	case 4: 
 		savedProjects[projectIndex].HasInitScript = !savedProjects[projectIndex].HasInitScript 
 
-		jsonBytes, err := json.Marshal(savedProjects)
-		if err != nil {
-			log.Fatal("Error: ", err)
-			return
-		}
-
-		err = os.WriteFile(projectsFilePath, jsonBytes, 0644)
+		err = WriteToJsonFile(savedProjects)
 		if err != nil {
 			log.Fatal("Error: ", err)
 		}
@@ -345,6 +351,12 @@ func WorkInProject() {
 }
 
 func main() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+	projectsFilePath = homeDir + projectsFilePath
+	fmt.Println("PROJECT PATH: ", projectsFilePath)
 
 	fmt.Println("Welcome to the project manager")
 	
