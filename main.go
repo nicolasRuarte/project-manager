@@ -80,7 +80,7 @@ func ProcessYesOrNoInput(input string) bool {
 }
 
 
-// Devuelve el índice del proyecto elegido
+// Devuelve el índice del array en el que el proyecto está almacenado. Básicamente devuelve: índice de la opción de la interfaz - 1
 func ShowSelectProjectMenu(savedProjects []project) (int, error) {
 	const errorIntValue = -1
 	fmt.Println("\nSelect a project: ")
@@ -272,7 +272,42 @@ func UpdateProject() {
 }
 
 func DeleteProject() {
-	fmt.Println("You can't delete a project yet. Functionality wasn't coded")
+	savedProjects, err := GetProjectListFromJson()
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+
+	projectIndex, err := ShowSelectProjectMenu(savedProjects)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+
+	indexIsInvalid := projectIndex < 0 || projectIndex > len(savedProjects) - 1
+
+	if indexIsInvalid {
+		log.Fatal("Error: The selected option is invalid")
+		return
+	}
+
+	selectedIndexIsLastElement := projectIndex == len(savedProjects) - 1
+
+	if selectedIndexIsLastElement {
+		newProjectsArray := savedProjects[:projectIndex]
+		fmt.Println("NEW ARRAY: ", newProjectsArray)
+
+		WriteToJsonFile(newProjectsArray)
+
+		fmt.Println("Project deleted successfully!")
+
+		return
+	}
+
+	newProjectsArray := append(savedProjects[:projectIndex], savedProjects[projectIndex + 1:]...)
+
+	fmt.Println(newProjectsArray)
+	WriteToJsonFile(newProjectsArray)
+
+	fmt.Println("Project deleted successfully!")
 }
 
 func WorkInProject() {
