@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"mvdan.cc/sh/shell"
@@ -22,6 +23,7 @@ type project struct {
 	HasInitScript bool `json:"hasInitScript"`
 }
 
+// Barra diagonal al principio porque os.UserHomeDir() devuelve el directorio home sin la barra del final
 var projectsFilePath string = "/.project-manager/projects.json"
 
 func CheckIfProjectsFileExists() bool {
@@ -132,7 +134,25 @@ func CreateProject() {
 		fmt.Println("Projects names should not have spaces")
 	}
 	fmt.Print("Project directory: ")
-	fmt.Scan(&directory) // TODO: Agregar verificación de que exista el directorio
+	fmt.Scan(&directory)
+	const slashAsciiCode = 47
+	lastDirCharacterIsNotSlash := directory[len(directory) - 1] != slashAsciiCode
+	if lastDirCharacterIsNotSlash {
+		fmt.Println("El directorio no termina con /")
+
+		var sb strings.Builder
+		sb.WriteString(directory)
+		sb.WriteString("/")
+		directory = sb.String()
+	}
+
+	// ReadDir() falla si no existe el directorio
+	_, err = os.ReadDir(directory)
+	if err != nil {
+		fmt.Println("Supuestamente el directorio no existe")
+		log.Fatal("Error: ", err)
+	}
+
 	fmt.Print("Project type (web, dekstop, game, etc): ")
 	fmt.Scan(&projectType)
 	fmt.Print("Has initialization script (y/n): ")
@@ -299,7 +319,6 @@ func DeleteProject() {
 
 	if selectedIndexIsLastElement {
 		newProjectsArray := savedProjects[:projectIndex]
-		fmt.Println("NEW ARRAY: ", newProjectsArray)
 
 		WriteToJsonFile(newProjectsArray)
 
