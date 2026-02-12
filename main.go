@@ -26,19 +26,23 @@ type project struct {
 // Barra diagonal al principio porque os.UserHomeDir() devuelve el directorio home sin la barra del final
 var projectsFilePath string = "/.project-manager/projects.json"
 
-func CheckIfProjectsFileExists() bool {
+func CheckIfProjectsFileExists() (bool, error) {
 	_, err := os.ReadFile(projectsFilePath)
 	if err != nil {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return false, err
 		}
-		os.Mkdir(homeDir + "/.project-manager/", 0700)
 
-		return false
+		err = os.Mkdir(homeDir + "/.project-manager/", 0700)
+		if err != nil {
+			return false, err
+		}
+
+		return false, nil
 	}
 
-	return true
+	return true, nil
 }
 
 func GetProjectListFromJson() ([]project, error) {
@@ -73,17 +77,16 @@ func WriteToJsonFile(projects []project) error {
 }
 
 // Acá hay error porque me devuelve falso en casos que me debería devolver error. Corregir
-func ProcessYesOrNoInput(input string) bool {
+func ProcessYesOrNoInput(input string) (bool, error) {
 	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
-		fmt.Println("Please select 'y' or 'n' as options")
-		return false
+		return false, errors.New("Please select 'y' or 'n' as options") 
 	}
 
 	inputIsYes := input == "y" || input == "Y"
 	if inputIsYes {
-		return true
+		return true, nil
 	} else {
-		return false
+		return false, nil
 	}
 }
 
@@ -124,7 +127,7 @@ func ShowSelectProjectMenu(savedProjects []project) (int, error) {
 	return projectIndexOnArray, nil
 }
 
-func CreateProject() {
+func CreateProject() error {
 	fmt.Println("\nCreating project...")
 
 	var name string
@@ -137,15 +140,13 @@ func CreateProject() {
 	fmt.Print("Project name: ")
 	wordCount, err := fmt.Scan(&name)
 	if wordCount > 1 {
-		fmt.Println("Projects names should not have spaces")
+		return errors.New("Project name should not have more than one word. Use '_' or '-' for spaces")
 	}
 	fmt.Print("Project directory: ")
 	fmt.Scan(&directory)
 	const slashAsciiCode = 47
 	lastDirCharacterIsNotSlash := directory[len(directory) - 1] != slashAsciiCode
 	if lastDirCharacterIsNotSlash {
-		fmt.Println("El directorio no termina con /")
-
 		var sb strings.Builder
 		sb.WriteString(directory)
 		sb.WriteString("/")
@@ -155,62 +156,70 @@ func CreateProject() {
 	// ReadDir() falla si no existe el directorio
 	_, err = os.ReadDir(directory)
 	if err != nil {
-		fmt.Println("Supuestamente el directorio no existe")
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	fmt.Print("Project type (web, dekstop, game, etc): ")
 	fmt.Scan(&projectType)
 	fmt.Print("Has initialization script (y/n): ")
 	fmt.Scan(&yesOrNo)
-	hasInitScript = ProcessYesOrNoInput(yesOrNo)
+	hasInitScript, err = ProcessYesOrNoInput(yesOrNo)
+	if err != nil {
+		return err
+	}
 
 	// Using Unix time 0 as a way of implementing a null time. Fix later
 	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0), hasInitScript}
 
-	if !CheckIfProjectsFileExists() {
+	projectFileExists, err := CheckIfProjectsFileExists()
+	if err != nil {
+		return err
+	}
+
+	if !projectFileExists {
 		var projects []project
 		projects = append(projects, newProject)
 
 		err = WriteToJsonFile(projects)
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return err
 		}
 
 		fmt.Println("Project created successfully!")
 
-		return
+		return nil
 	}
 
 	jsonData, err := os.ReadFile(projectsFilePath)
 	if err != nil {
-		fmt.Println("Error: ", err)
-		return
+		return err
 	}
 	
 	var savedProjects []project
 	err = json.Unmarshal(jsonData, &savedProjects)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		return err
 	}
 
 	savedProjects = append(savedProjects, newProject)
 	
 	err = WriteToJsonFile(savedProjects)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
+
+	return nil
 }
 
-func ReadProject() {
+func ReadProject() error {
 	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	// -1 porque los índices seleccionables empiezan de uno y la posición del array empieza desde el 0
@@ -222,17 +231,19 @@ func ReadProject() {
 	fmt.Println("Creation date: ", selectedProject.CreationDate)
 	fmt.Println("Last accessed: ", selectedProject.LastAccessed)
 	fmt.Println("Has init script: ", selectedProject.HasInitScript)
+
+	return nil
 }
 
-func UpdateProject() {
+func UpdateProject() error {
 	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	// Refactorizar, creo que puedo hacerlo más programático
@@ -248,8 +259,7 @@ func UpdateProject() {
 
 	invalidInputRange := selectedAttributeIndex < 1 || selectedAttributeIndex > 4
 	if invalidInputRange {
-		fmt.Println("Inserted value is not allowed")
-		return
+		return errors.New("Inserted value is not allowed")
 	}
 
 	switch selectedAttributeIndex {
@@ -262,7 +272,7 @@ func UpdateProject() {
 
 		err = WriteToJsonFile(savedProjects)
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return err
 		}
 
 		fmt.Println("Project updated successfully!")
@@ -276,7 +286,7 @@ func UpdateProject() {
 
 		err = WriteToJsonFile(savedProjects)
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return err
 		}
 
 		fmt.Println("Project updated successfully!")
@@ -290,38 +300,37 @@ func UpdateProject() {
 
 		err = WriteToJsonFile(savedProjects)
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return err
 		}
 	case 4: 
 		savedProjects[projectIndex].HasInitScript = !savedProjects[projectIndex].HasInitScript 
 
 		err = WriteToJsonFile(savedProjects)
 		if err != nil {
-			log.Fatal("Error: ", err)
+			return err
 		}
 
 		fmt.Println("Has init script value was swapped")
 	}
 
 	fmt.Println("Project updated successfully!")
+	return nil
 }
 
-func DeleteProject() {
+func DeleteProject() error {
 	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	indexIsInvalid := projectIndex < 0 || projectIndex > len(savedProjects) - 1
-
 	if indexIsInvalid {
-		log.Fatal("Error: The selected option is invalid")
-		return
+		return errors.New("The selected option is invalid")
 	}
 
 	selectedIndexIsLastElement := projectIndex == len(savedProjects) - 1
@@ -329,30 +338,38 @@ func DeleteProject() {
 	if selectedIndexIsLastElement {
 		newProjectsArray := savedProjects[:projectIndex]
 
-		WriteToJsonFile(newProjectsArray)
+		err = WriteToJsonFile(newProjectsArray)
+		if err != nil {
+			return err
+		}
 
 		fmt.Println("Project deleted successfully!")
 
-		return
+		return nil
 	}
 
 	newProjectsArray := append(savedProjects[:projectIndex], savedProjects[projectIndex + 1:]...)
 
 	fmt.Println(newProjectsArray)
-	WriteToJsonFile(newProjectsArray)
+	err = WriteToJsonFile(newProjectsArray)
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("Project deleted successfully!")
+
+	return nil
 }
 
-func WorkInProject() {
+func WorkInProject() error {
 	savedProjects, err := GetProjectListFromJson()
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	projectIndex, err := ShowSelectProjectMenu(savedProjects)
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 
 	// Hacer una verifcación de que existe el archivo init en el directorio del proyecto
@@ -360,28 +377,30 @@ func WorkInProject() {
 
 	fileInfo, err := os.Stat(projectToWorkOn.Directory + "init")
 	if err != nil {
-		log.Fatal("Error: ", err)
 		fmt.Println("Check if you have an init file in your project's directory")
+		return err
 	}
 
 	initFileIsExecutable := fileInfo.Mode()&0100 != 0
-
 	if !initFileIsExecutable {
-		log.Fatal("The init file in the project's directory is not executable")
+		return errors.New("The init file in the project's directory is not executable")
 	}
 
 	fmt.Println("Executing script...")
 	_, err = shell.SourceFile(context.TODO(), projectToWorkOn.Directory + "init")
 	if err != nil {
-		log.Fatal("Error: ", err)
+		return err
 	}
 	fmt.Println("Script executed. Good luck!")
+
+	return nil
 }
 
 func main() {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal("Error: ", err)
+		return
 	}
 	projectsFilePath = homeDir + projectsFilePath
 
@@ -398,21 +417,33 @@ func main() {
 	var input int 
 	fmt.Scanln(&input)
 
-	if input > 5 || input < 1 {
-		log.Fatal("Error: The inserted value is not one of the allowed options")
-		return
-	}
-
 	switch input {
 	case 1:
-		CreateProject()
+		err = CreateProject()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 	case 2:
-		ReadProject()
+		err = ReadProject()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 	case 3:
-		UpdateProject()
+		err = UpdateProject()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 	case 4: 
-		DeleteProject()
+		err = DeleteProject()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
 	case 5:
-		WorkInProject()
+		err = WorkInProject()
+		if err != nil {
+			log.Fatal("Error: ", err)
+		}
+	default:
+		log.Fatal("Error: Inserted value is not allowed")
 	}
 }
