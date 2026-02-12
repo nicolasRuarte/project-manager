@@ -92,6 +92,12 @@ func ProcessYesOrNoInput(input string) bool {
 func ShowSelectProjectMenu(savedProjects []project) (int, error) {
 	const errorIntValue = -1
 	fmt.Println("\nSelect a project: ")
+
+	isArrayEmpty := len(savedProjects) == 0
+	if isArrayEmpty {
+		return errorIntValue, errors.New("No existe ningún proyecto. Intenta crear uno antes")
+	}
+
 	for i, project := range savedProjects {
 		if i == 0 {
 			fmt.Printf("	%d) %s", i + 1, project.Name)
@@ -203,6 +209,9 @@ func ReadProject() {
 	}
 
 	projectIndex, err := ShowSelectProjectMenu(savedProjects)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
 
 	// -1 porque los índices seleccionables empiezan de uno y la posición del array empieza desde el 0
 	selectedProject := savedProjects[projectIndex]
