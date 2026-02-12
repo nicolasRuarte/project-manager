@@ -386,6 +386,12 @@ func WorkInProject() error {
 		return errors.New("The init file in the project's directory is not executable")
 	}
 
+	savedProjects[projectIndex].LastAccessed = time.Now()
+	err = WriteToJsonFile(savedProjects)
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("Executing script...")
 	_, err = shell.SourceFile(context.TODO(), projectToWorkOn.Directory + "init")
 	if err != nil {
