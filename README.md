@@ -41,5 +41,4 @@ This one opens Firefox and Visual Studio Code, but you can write something simil
 
 This program is on its first versions yet, so it has some limitations, specially with processing input. Those limitations are the following:
 
-1. When creating or updating a project, your project name has to be one word only. If you need spaces you can use underscores or hyphens.
 2. When creating or updating a project, its directory has to be an absolute path. That means that for now you can't use "~/"
