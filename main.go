@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -130,20 +131,20 @@ func ShowSelectProjectMenu(savedProjects []project) (int, error) {
 func CreateProject() error {
 	fmt.Println("\nCreating project...")
 
-	var name string
-	var directory string
-	var projectType string
-	var hasInitScript bool
-	var yesOrNo string // Variable para aceptar el y/n del usuario y transformarlo en booleano
-
-	// Fix: El scan no acepta inputs que contengan espacios, hay que ver qué hacemos con eso
 	fmt.Print("Project name: ")
-	wordCount, err := fmt.Scan(&name)
-	if wordCount > 1 {
-		return errors.New("Project name should not have more than one word. Use '_' or '-' for spaces")
+	reader := bufio.NewReader(os.Stdin)
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		return err
 	}
+	name = strings.TrimSpace(name)
+
 	fmt.Print("Project directory: ")
-	fmt.Scan(&directory)
+	directory, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	directory = strings.TrimSpace(directory)
 	const slashAsciiCode = 47
 	lastDirCharacterIsNotSlash := directory[len(directory) - 1] != slashAsciiCode
 	if lastDirCharacterIsNotSlash {
@@ -152,18 +153,25 @@ func CreateProject() error {
 		sb.WriteString("/")
 		directory = sb.String()
 	}
-
-	// ReadDir() falla si no existe el directorio
-	_, err = os.ReadDir(directory)
+	_, err = os.ReadDir(directory) // ReadDir() falla si no existe el directorio
 	if err != nil {
 		return err
 	}
 
 	fmt.Print("Project type (web, dekstop, game, etc): ")
-	fmt.Scan(&projectType)
+	projectType, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	projectType = strings.TrimSpace(projectType)
+
 	fmt.Print("Has initialization script (y/n): ")
-	fmt.Scan(&yesOrNo)
-	hasInitScript, err = ProcessYesOrNoInput(yesOrNo)
+	yesOrNo, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	yesOrNo = strings.TrimSpace(yesOrNo)
+	hasInitScript, err := ProcessYesOrNoInput(yesOrNo)
 	if err != nil {
 		return err
 	}
@@ -207,6 +215,8 @@ func CreateProject() error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("Project created successfully!")
 
 	return nil
 }
@@ -264,9 +274,12 @@ func UpdateProject() error {
 
 	switch selectedAttributeIndex {
 	case 1:
-		var newValue string
-		fmt.Print("Insert new value: ")
-		fmt.Scan(&newValue)
+		reader := bufio.NewReader(os.Stdin)
+		newValue, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		newValue = strings.TrimSpace(newValue)
 
 		savedProjects[projectIndex].Name = newValue
 
