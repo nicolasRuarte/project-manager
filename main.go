@@ -77,7 +77,7 @@ func WriteToJsonFile(projects []project) error {
 		return nil
 }
 
-// Acá hay error porque me devuelve falso en casos que me debería devolver error. Corregir
+// Procesa los strings 'y' y 'n' como true y false, respectivamente
 func ProcessYesOrNoInput(input string) (bool, error) {
 	if input != "y" && input != "Y" &&  input != "n" && input != "N" {
 		return false, errors.New("Please select 'y' or 'n' as options") 
