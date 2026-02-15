@@ -18,24 +18,35 @@ import (
 type project struct {
 	Name string `json:"name"`
 	Directory string `json:"directory"`
-	ProjectType string `json:"projectType"` // If it is a web, mobile, dekstop or videogame project (Not limited to those options)
+	Tags []string `json:"tags"`
 	CreationDate time.Time `json:"creationDate"`
 	LastAccessed time.Time `json:"lastAccessed"`
 	HasInitScript bool `json:"hasInitScript"`
 }
 
-// Barra diagonal al principio porque os.UserHomeDir() devuelve el directorio home sin la barra del final
-var projectsFilePath string = "/.project-manager/projects.json"
+// Path to the JSON file where projects are stored
+var projectsFilePath string
 
+/*
+Checks if project-manager directory and projects.json file exists. 
+
+If directory and/or file do not exist, it creates them
+*/
 func CheckIfProjectsFileExists() (bool, error) {
-	_, err := os.ReadFile(projectsFilePath)
-	if err != nil {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return false, err
-		}
+	homeDir, err := os.UserHomeDir()
+	appDirectory := homeDir + "/.project-manager/"
 
-		err = os.Mkdir(homeDir + "/.project-manager/", 0700)
+	_, err = os.ReadDir(appDirectory)
+	if err != nil {
+		err = os.Mkdir(appDirectory, 0700)
+		if err != nil {
+			return false, errors.New("Error al crear la carpeta .project-manager/")
+		}
+	}
+
+	_, err = os.ReadFile(projectsFilePath)
+	if err != nil {
+		err = os.WriteFile(projectsFilePath, nil, 0644)
 		if err != nil {
 			return false, err
 		}
@@ -49,7 +60,7 @@ func CheckIfProjectsFileExists() (bool, error) {
 func GetProjectListFromJson() ([]project, error) {
 	jsonBytes, err := os.ReadFile(projectsFilePath)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("File projects.json does not exist. Try creating a new project instead")
 	}
 	
 	var projectList []project
@@ -158,12 +169,13 @@ func CreateProject() error {
 		return err
 	}
 
-	fmt.Print("Project type (web, dekstop, game, etc): ")
-	projectType, err := reader.ReadString('\n')
+	fmt.Print("Tags: ")
+	tagsInput, err := reader.ReadString('\n')
 	if err != nil {
 		return err
 	}
-	projectType = strings.TrimSpace(projectType)
+	tagsInput = strings.TrimSpace(tagsInput)
+	tags := strings.Split(tagsInput, " ")
 
 	fmt.Print("Has initialization script (y/n): ")
 	yesOrNo, err := reader.ReadString('\n')
@@ -177,7 +189,7 @@ func CreateProject() error {
 	}
 
 	// Using Unix time 0 as a way of implementing a null time. Fix later
-	newProject := project{name, directory, projectType, time.Now(), time.Unix(0, 0), hasInitScript}
+	newProject := project{name, directory, tags, time.Now(), time.Unix(0, 0), hasInitScript}
 
 	projectFileExists, err := CheckIfProjectsFileExists()
 	if err != nil {
@@ -237,9 +249,13 @@ func ReadProject() error {
 	fmt.Println("PROJECT: ")
 	fmt.Println("Name: ", selectedProject.Name)
 	fmt.Println("Directory: ", selectedProject.Directory)
-	fmt.Println("Project type: ", selectedProject.ProjectType)
+	fmt.Println("Tags: ", selectedProject.Tags)
 	fmt.Println("Creation date: ", selectedProject.CreationDate)
-	fmt.Println("Last accessed: ", selectedProject.LastAccessed)
+	if selectedProject.LastAccessed.Equal(time.Unix(0, 0)) {
+		fmt.Println("Last accessed: Never")
+	} else {
+		fmt.Println("Last accessed: ", selectedProject.LastAccessed)
+	}
 	fmt.Println("Has init script: ", selectedProject.HasInitScript)
 
 	return nil
@@ -260,7 +276,7 @@ func UpdateProject() error {
 	fmt.Println("\nSelect the attribute you want to update")
 	fmt.Println("\t1) Name")
 	fmt.Println("\t2) Directory")
-	fmt.Println("\t3) Project type")
+	fmt.Println("\t3) Tags")
 	fmt.Println("\t4) Has init script")
 
 	var selectedAttributeIndex int
@@ -272,9 +288,11 @@ func UpdateProject() error {
 		return errors.New("Inserted value is not allowed")
 	}
 
+	reader := bufio.NewReader(os.Stdin)
+
 	switch selectedAttributeIndex {
 	case 1:
-		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Insert new value: ")
 		newValue, err := reader.ReadString('\n')
 		if err != nil {
 			return err
@@ -282,13 +300,6 @@ func UpdateProject() error {
 		newValue = strings.TrimSpace(newValue)
 
 		savedProjects[projectIndex].Name = newValue
-
-		err = WriteToJsonFile(savedProjects)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("Project updated successfully!")
 	case 2:
 		var newValue string
 
@@ -296,34 +307,25 @@ func UpdateProject() error {
 		fmt.Scan(&newValue)
 
 		savedProjects[projectIndex].Directory = newValue
-
-		err = WriteToJsonFile(savedProjects)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("Project updated successfully!")
 	case 3:
-		var newValue string
-
 		fmt.Print("Insert new value: ")
-		fmt.Scan(&newValue)
-
-		savedProjects[projectIndex].ProjectType = newValue
-
-		err = WriteToJsonFile(savedProjects)
+		newValue, err := reader.ReadString('\n')
 		if err != nil {
 			return err
 		}
+		newValue = strings.TrimSpace(newValue)
+		tags := strings.Split(newValue, " ")
+
+		savedProjects[projectIndex].Tags = tags
 	case 4: 
 		savedProjects[projectIndex].HasInitScript = !savedProjects[projectIndex].HasInitScript 
 
-		err = WriteToJsonFile(savedProjects)
-		if err != nil {
-			return err
-		}
-
 		fmt.Println("Has init script value was swapped")
+	}
+
+	err = WriteToJsonFile(savedProjects)
+	if err != nil {
+		return err
 	}
 
 	fmt.Println("Project updated successfully!")
@@ -421,7 +423,7 @@ func main() {
 		log.Fatal("Error: ", err)
 		return
 	}
-	projectsFilePath = homeDir + projectsFilePath
+	projectsFilePath = homeDir + "/.project-manager/v0.2-projects.json"
 
 	fmt.Println("Welcome to the project manager")
 	
